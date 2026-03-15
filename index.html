@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Meet không gian vũ trụ (Yêu cầu đăng nhập)</title>
+    <title>Google Meet vũ trụ - Đăng nhập Google</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts -->
@@ -11,23 +11,48 @@
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        /* Reset & base */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; color: white; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            color: white;
+        }
 
         /* Nền vũ trụ */
         .space-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: radial-gradient(ellipse at 20% 30%, #0d0d2b, #000000);
             z-index: -2;
         }
+
         .stars {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; background: transparent;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: transparent;
             animation: starMove 60s linear infinite;
         }
+
         .stars::after, .stars::before {
-            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: transparent;
             background-image: 
                 radial-gradient(2px 2px at 15px 80px, #fff, rgba(0,0,0,0)),
@@ -39,8 +64,11 @@
                 radial-gradient(3px 3px at 780px 350px, #ffccb3, rgba(0,0,0,0)),
                 radial-gradient(2px 2px at 1000px 800px, #dab3ff, rgba(0,0,0,0)),
                 radial-gradient(5px 5px at 450px 600px, #ffb3b3, rgba(0,0,0,0));
-            background-repeat: repeat; background-size: 300px 300px; opacity: 0.8;
+            background-repeat: repeat;
+            background-size: 300px 300px;
+            opacity: 0.8;
         }
+
         .stars::before {
             background-image: 
                 radial-gradient(2px 2px at 250px 30px, #fff, rgba(0,0,0,0)),
@@ -48,16 +76,26 @@
                 radial-gradient(3px 3px at 80px 700px, #fff0b5, rgba(0,0,0,0)),
                 radial-gradient(1px 1px at 940px 250px, #b3d9ff, rgba(0,0,0,0)),
                 radial-gradient(4px 4px at 600px 400px, #ffb3d9, rgba(0,0,0,0));
-            background-size: 200px 200px; opacity: 0.6;
+            background-size: 200px 200px;
+            opacity: 0.6;
             animation: twinkle 3s ease-in-out infinite alternate;
         }
-        @keyframes starMove { 0% { transform: translate(0,0); } 100% { transform: translate(-30px,-30px); } }
-        @keyframes twinkle { 0% { opacity:0.3; } 100% { opacity:0.9; } }
+
+        @keyframes starMove {
+            0% { transform: translate(0,0); }
+            100% { transform: translate(-30px,-30px); }
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.9; }
+        }
 
         /* Overlay đăng nhập */
         .login-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: rgba(0,0,0,0.85);
             backdrop-filter: blur(10px);
             z-index: 1000;
@@ -66,6 +104,7 @@
             justify-content: center;
             transition: opacity 0.5s ease;
         }
+
         .login-card {
             background: rgba(20,20,50,0.7);
             backdrop-filter: blur(15px);
@@ -77,6 +116,7 @@
             max-width: 400px;
             width: 90%;
         }
+
         .login-card h2 {
             font-size: 32px;
             margin-bottom: 15px;
@@ -84,76 +124,324 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
         .login-card p {
             color: #ccc;
             margin-bottom: 30px;
             font-size: 16px;
         }
-        .login-card .google-btn {
+
+        #googleSignInDiv {
             display: flex;
-            align-items: center;
             justify-content: center;
-            gap: 12px;
-            background: white;
-            color: #444;
-            border: none;
-            border-radius: 40px;
-            padding: 12px 24px;
-            font-size: 18px;
-            font-weight: 500;
-            cursor: pointer;
             width: 100%;
-            transition: 0.2s;
-            border: 1px solid rgba(255,255,255,0.3);
         }
-        .login-card .google-btn:hover {
-            background: #f5f5f5;
-            transform: scale(1.02);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-        }
-        .login-card .google-btn img {
-            width: 24px;
-            height: 24px;
-        }
+
         /* App chính (ẩn ban đầu) */
         .app {
-            display: none; /* Ẩn cho đến khi đăng nhập */
+            display: none;
             height: 100vh;
             backdrop-filter: blur(2px);
         }
 
-        /* Các style cho video area và chat (giữ nguyên từ bản trước) */
-        .video-area { flex:1; display:flex; flex-direction:column; padding:20px; }
-        .video-grid { flex:1; display:grid; grid-template-columns:repeat(auto-fit, minmax(300px,1fr)); gap:20px; align-content:center; margin-bottom:20px; }
-        .video-tile { background:rgba(20,20,50,0.4); backdrop-filter:blur(10px); border-radius:24px; border:1px solid rgba(255,255,255,0.15); box-shadow:0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(156,227,255,0.2) inset; overflow:hidden; position:relative; display:flex; align-items:center; justify-content:center; min-height:200px; }
-        .video-tile video, .video-tile img { width:100%; height:100%; object-fit:cover; }
-        .participant-name { position:absolute; bottom:10px; left:15px; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); padding:6px 15px; border-radius:30px; font-size:14px; font-weight:500; border:1px solid rgba(255,255,255,0.2); }
-        .mic-off-icon { position:absolute; bottom:10px; right:15px; background:rgba(255,80,80,0.7); backdrop-filter:blur(4px); width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; border:1px solid rgba(255,255,255,0.3); }
+        /* Layout video & chat */
+        .video-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .video-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            align-content: center;
+            margin-bottom: 20px;
+        }
+
+        /* ----- HIỆU ỨNG GLOW BORDER CHO VIDEO TILE ----- */
+        .video-tile {
+            position: relative;
+            background: rgba(20,20,50,0.4);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+        }
+
+        .glow-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, 
+                #ff00cc, #3333ff, #00ff99, #ff00cc, #3333ff);
+            background-size: 400% 400%;
+            border-radius: 24px;
+            z-index: -1;
+            animation: glowing 10s ease infinite;
+            filter: blur(5px);
+            opacity: 0.7;
+        }
+
+        @keyframes glowing {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .video-tile video, .video-tile img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .participant-name {
+            position: absolute;
+            bottom: 10px;
+            left: 15px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            padding: 6px 15px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .mic-off-icon {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            background: rgba(255,80,80,0.7);
+            backdrop-filter: blur(4px);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
 
         /* Thanh điều khiển */
-        .controls { background:rgba(0,0,0,0.4); backdrop-filter:blur(20px); border-radius:60px; padding:12px 24px; display:flex; align-items:center; justify-content:center; gap:25px; margin:0 auto; border:1px solid rgba(255,255,255,0.1); box-shadow:0 8px 32px rgba(0,0,0,0.5); width:fit-content; }
-        .control-btn { background:rgba(255,255,255,0.1); border:none; color:white; width:48px; height:48px; border-radius:50%; font-size:20px; cursor:pointer; transition:0.2s; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.1); }
-        .control-btn:hover { background:rgba(255,255,255,0.25); transform:scale(1.05); }
-        .control-btn.end-call { background:#ea4335; color:white; width:56px; height:56px; font-size:24px; }
-        .control-btn.end-call:hover { background:#c5221f; }
+        .controls {
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(20px);
+            border-radius: 60px;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 25px;
+            margin: 0 auto;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            width: fit-content;
+        }
+
+        /* ----- HIỆU ỨNG SHINE BUTTON ----- */
+        .control-btn {
+            position: relative;
+            overflow: hidden;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .shine-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.4) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: skewX(-25deg);
+            transition: left 0.7s ease;
+        }
+
+        .shine-button:hover::after {
+            left: 150%;
+        }
+
+        .control-btn:hover {
+            background: rgba(255,255,255,0.25);
+            transform: scale(1.05);
+        }
+
+        .control-btn.end-call {
+            background: #ea4335;
+            width: 56px;
+            height: 56px;
+            font-size: 24px;
+        }
+
+        .control-btn.end-call:hover {
+            background: #c5221f;
+        }
 
         /* Chat panel */
-        .chat-panel { width:340px; background:rgba(10,10,25,0.7); backdrop-filter:blur(20px); border-left:1px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; padding:20px 16px; box-shadow:-5px 0 30px rgba(0,0,0,0.5); }
-        .chat-header { display:flex; align-items:center; gap:12px; margin-bottom:24px; font-weight:600; font-size:18px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:16px; }
-        .chat-header i { color:#a975ff; }
-        .chat-messages { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:16px; margin-bottom:16px; }
-        .message { display:flex; align-items:flex-start; gap:10px; }
-        .message-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(145deg, #4158D0, #C850C0); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:16px; color:white; flex-shrink:0; }
-        .message-bubble { background:rgba(255,255,255,0.1); backdrop-filter:blur(5px); padding:10px 14px; border-radius:20px 20px 20px 5px; border:1px solid rgba(255,255,255,0.05); font-size:14px; word-break:break-word; max-width:220px; }
-        .message-bubble .name { font-weight:600; color:#c3a0ff; margin-bottom:4px; font-size:13px; }
-        .message-bubble .text { color:#f0f0f0; }
-        .chat-input-area { display:flex; gap:10px; background:rgba(0,0,0,0.4); border-radius:40px; padding:6px 6px 6px 18px; border:1px solid rgba(255,255,255,0.1); }
-        .chat-input-area input { flex:1; background:transparent; border:none; color:white; font-size:15px; outline:none; }
-        .chat-input-area input::placeholder { color:rgba(255,255,255,0.5); }
-        .chat-input-area button { background:#7d4aff; border:none; color:white; width:42px; height:42px; border-radius:50%; font-size:18px; cursor:pointer; transition:0.2s; }
-        .chat-input-area button:hover { background:#6a3ad6; transform:scale(1.05); }
+        .chat-panel {
+            width: 340px;
+            background: rgba(10,10,25,0.7);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 16px;
+            box-shadow: -5px 0 30px rgba(0,0,0,0.5);
+        }
 
-        /* Nút đăng xuất nhỏ */
+        .chat-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            font-weight: 600;
+            font-size: 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 16px;
+        }
+
+        /* ----- HIỆU ỨNG PULSE GLOW CHO ICON CHAT ----- */
+        .pulse-glow {
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0% {
+                filter: drop-shadow(0 0 5px rgba(255,255,255,0.3)) drop-shadow(0 0 15px rgba(106,90,205,0.4));
+            }
+            50% {
+                filter: drop-shadow(0 0 10px rgba(255,255,255,0.6)) drop-shadow(0 0 30px rgba(138,43,226,0.8));
+            }
+            100% {
+                filter: drop-shadow(0 0 5px rgba(255,255,255,0.3)) drop-shadow(0 0 15px rgba(106,90,205,0.4));
+            }
+        }
+
+        .chat-header i {
+            color: #a975ff;
+            font-size: 22px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #4158D0, #C850C0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .message-bubble {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+            padding: 10px 14px;
+            border-radius: 20px 20px 20px 5px;
+            border: 1px solid rgba(255,255,255,0.05);
+            font-size: 14px;
+            word-break: break-word;
+            max-width: 220px;
+        }
+
+        .message-bubble .name {
+            font-weight: 600;
+            color: #c3a0ff;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .message-bubble .text {
+            color: #f0f0f0;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 40px;
+            padding: 6px 6px 6px 18px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .chat-input-area input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+
+        .chat-input-area button {
+            background: #7d4aff;
+            border: none;
+            color: white;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .chat-input-area button:hover {
+            background: #6a3ad6;
+            transform: scale(1.05);
+        }
+
+        /* Nút đăng xuất */
         .logout-btn {
             position: absolute;
             top: 20px;
@@ -167,10 +455,11 @@
             font-size: 14px;
             cursor: pointer;
             z-index: 10;
-            display: flex;
+            display: none;
             align-items: center;
             gap: 8px;
         }
+
         .logout-btn:hover {
             background: rgba(255,255,255,0.2);
         }
@@ -180,13 +469,12 @@
     <div class="space-bg"></div>
     <div class="stars"></div>
 
-    <!-- Overlay đăng nhập Google -->
+    <!-- Overlay đăng nhập -->
     <div id="loginOverlay" class="login-overlay">
         <div class="login-card">
             <h2>🚀 Phòng họp vũ trụ</h2>
             <p>Đăng nhập bằng Google để tham gia cuộc gọi</p>
-            <!-- Nút đăng nhập Google sẽ được khởi tạo bằng JS -->
-            <div id="googleSignInDiv" style="width: 100%; display: flex; justify-content: center;"></div>
+            <div id="googleSignInDiv"></div>
         </div>
     </div>
 
@@ -194,49 +482,49 @@
     <div class="app" id="mainApp">
         <div class="video-area">
             <div class="video-grid" id="videoGrid">
-                <!-- Tile local video (camera thật) -->
-                <div class="video-tile" id="localTile">
+                <!-- Tile local video với hiệu ứng glow border -->
+                <div class="video-tile glow-border" id="localTile">
                     <video id="localVideo" autoplay playsinline muted></video>
                     <div class="participant-name" id="localParticipantName">Bạn <i class="fas fa-circle" style="color: #4caf50; font-size: 10px; margin-left: 6px;"></i></div>
                 </div>
 
-                <!-- Tile người tham gia mô phỏng -->
-                <div class="video-tile">
+                <!-- Các tile giả lập cũng thêm glow border -->
+                <div class="video-tile glow-border">
                     <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Participant">
                     <div class="participant-name">Minh Anh</div>
                     <div class="mic-off-icon"><i class="fas fa-microphone-slash"></i></div>
                 </div>
-                <div class="video-tile">
+                <div class="video-tile glow-border">
                     <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Participant">
                     <div class="participant-name">Hoàng Nam</div>
                 </div>
-                <div class="video-tile">
+                <div class="video-tile glow-border">
                     <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Participant">
                     <div class="participant-name">Phương Linh</div>
                 </div>
-                <div class="video-tile">
+                <div class="video-tile glow-border">
                     <img src="https://randomuser.me/api/portraits/men/75.jpg" alt="Participant">
                     <div class="participant-name">Đức Huy</div>
                     <div class="mic-off-icon"><i class="fas fa-microphone-slash"></i></div>
                 </div>
             </div>
 
-            <!-- Thanh điều khiển cuộc gọi -->
+            <!-- Thanh điều khiển - thêm class shine-button cho các nút -->
             <div class="controls">
-                <button class="control-btn" id="micBtn"><i class="fas fa-microphone"></i></button>
-                <button class="control-btn" id="camBtn"><i class="fas fa-video"></i></button>
-                <button class="control-btn"><i class="fas fa-volume-up"></i></button>
-                <button class="control-btn"><i class="fas fa-user-plus"></i></button>
-                <button class="control-btn"><i class="fas fa-comment"></i></button>
-                <button class="control-btn"><i class="fas fa-ellipsis-h"></i></button>
-                <button class="control-btn end-call" id="endCall"><i class="fas fa-phone-slash"></i></button>
+                <button class="control-btn shine-button" id="micBtn"><i class="fas fa-microphone"></i></button>
+                <button class="control-btn shine-button" id="camBtn"><i class="fas fa-video"></i></button>
+                <button class="control-btn shine-button"><i class="fas fa-volume-up"></i></button>
+                <button class="control-btn shine-button"><i class="fas fa-user-plus"></i></button>
+                <button class="control-btn shine-button"><i class="fas fa-comment"></i></button>
+                <button class="control-btn shine-button"><i class="fas fa-ellipsis-h"></i></button>
+                <button class="control-btn end-call shine-button" id="endCall"><i class="fas fa-phone-slash"></i></button>
             </div>
         </div>
 
         <!-- Panel chat bên phải -->
         <div class="chat-panel">
             <div class="chat-header">
-                <i class="fas fa-comment-dots"></i>
+                <i class="fas fa-comment-dots pulse-glow"></i> <!-- hiệu ứng pulse cho icon -->
                 <span>Tin nhắn cuộc họp</span>
                 <span style="margin-left: auto; font-size: 14px; color: #aaa;">5 người</span>
             </div>
@@ -262,13 +550,13 @@
             </div>
         </div>
 
-        <!-- Nút đăng xuất nhỏ (ẩn khi chưa login) -->
-        <button class="logout-btn" id="logoutBtn" style="display: none;"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+        <!-- Nút đăng xuất -->
+        <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
     </div>
 
     <script>
-        // Thông tin Client ID của bạn - THAY BẰNG CLIENT ID THẬT
-        const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID';  // <<< THAY THẾ NÀY
+        // Client ID của bạn (đã thay thế)
+        const CLIENT_ID = '381679579915-0lgk09kdi5qqqd9p5t39rreme2f55ano.apps.googleusercontent.com';
 
         // Biến lưu thông tin người dùng
         let userProfile = null;
@@ -282,7 +570,6 @@
                 cancel_on_tap_outside: true
             });
 
-            // Hiển thị nút đăng nhập Google trong div
             google.accounts.id.renderButton(
                 document.getElementById('googleSignInDiv'),
                 { theme: 'outline', size: 'large', text: 'signin_with', shape: 'pill' }
@@ -293,7 +580,6 @@
         function handleCredentialResponse(response) {
             console.log('Đăng nhập thành công:', response);
 
-            // Giải mã JWT để lấy thông tin profile
             const payload = parseJwt(response.credential);
             userProfile = {
                 name: payload.name,
@@ -311,11 +597,11 @@
             // Cập nhật tên người dùng trên local tile
             document.getElementById('localParticipantName').innerHTML = `${userProfile.name} <i class="fas fa-circle" style="color: #4caf50; font-size: 10px; margin-left: 6px;"></i>`;
 
-            // Khởi tạo camera (gọi hàm đã có)
+            // Khởi tạo camera
             initLocalVideo();
         }
 
-        // Hàm giải mã JWT (lấy từ google)
+        // Hàm giải mã JWT
         function parseJwt(token) {
             const base64Url = token.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -325,11 +611,10 @@
 
         // Xử lý đăng xuất
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            // Xóa token (nếu có) và đưa về màn hình login
             google.accounts.id.disableAutoSelect();
             userProfile = null;
 
-            // Dừng camera nếu đang chạy
+            // Dừng camera
             const localVideo = document.getElementById('localVideo');
             if (localVideo.srcObject) {
                 localVideo.srcObject.getTracks().forEach(track => track.stop());
@@ -342,7 +627,7 @@
             document.getElementById('logoutBtn').style.display = 'none';
         });
 
-        // Hàm lấy video local (camera)
+        // Hàm lấy video local
         async function initLocalVideo() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -350,7 +635,7 @@
                 localVideo.srcObject = stream;
             } catch (err) {
                 console.error('Không thể truy cập camera:', err);
-                // Nếu không có camera, hiển thị ảnh tĩnh
+                // Fallback ảnh tĩnh
                 document.getElementById('localTile').innerHTML = `
                     <img src="https://randomuser.me/api/portraits/lego/1.jpg" alt="No camera" style="width:100%; height:100%; object-fit:cover;">
                     <div class="participant-name" id="localParticipantName">${userProfile ? userProfile.name : 'Bạn'} (camera tắt)</div>
@@ -374,11 +659,11 @@
             camBtn.innerHTML = camOn ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
         });
 
-        // Nút kết thúc cuộc gọi (demo - quay về login?)
+        // Nút kết thúc cuộc gọi
         document.getElementById('endCall').addEventListener('click', () => {
             if (confirm('Kết thúc cuộc họp?')) {
-                // Có thể đăng xuất hoặc chỉ reload
-                location.reload(); // Demo: tải lại trang (sẽ về login)
+                // Quay về màn hình login (giống đăng xuất)
+                document.getElementById('logoutBtn').click();
             }
         });
 
@@ -399,7 +684,7 @@
                     </div>
                 `;
             } else {
-                // Giả lập tin nhắn từ người khác
+                // Giả lập tin nhắn từ Hoàng Nam
                 messageDiv.innerHTML = `
                     <div class="message-avatar">HN</div>
                     <div class="message-bubble">
@@ -418,7 +703,7 @@
                 addMessage(msg, true);
                 chatInput.value = '';
 
-                // Giả lập phản hồi sau 2 giây
+                // Phản hồi sau 2 giây
                 setTimeout(() => {
                     addMessage(msg + ' 👍', false);
                 }, 2000);
