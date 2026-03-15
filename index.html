@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Meet vũ trụ - Kết nối thực tế</title>
+    <title>Google Meet vũ trụ - Bản sao đầy đủ</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts -->
@@ -215,7 +215,7 @@
             filter: brightness(1.2);
         }
 
-        /* App chính */
+        /* App chính (phòng họp) */
         .app {
             display: none;
             height: 100vh;
@@ -261,7 +261,13 @@
             background: rgba(255,80,80,0.6);
         }
 
-        /* Video area */
+        /* Khu vực video và chat */
+        .main-content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+        }
+
         .video-area {
             flex: 1;
             display: flex;
@@ -276,6 +282,8 @@
             gap: 20px;
             align-content: center;
             margin-bottom: 20px;
+            overflow-y: auto;
+            padding: 10px;
         }
 
         .video-tile {
@@ -290,6 +298,7 @@
             align-items: center;
             justify-content: center;
             min-height: 200px;
+            aspect-ratio: 16/9;
         }
 
         .glow-border::before {
@@ -551,7 +560,7 @@
             transform: scale(1.05);
         }
 
-        /* Nút đăng xuất */
+        /* Nút đăng xuất Google */
         .logout-btn {
             position: absolute;
             top: 20px;
@@ -608,13 +617,14 @@
             <div class="leave-room-btn" id="leaveRoomBtn"><i class="fas fa-sign-out-alt"></i> Rời phòng</div>
         </div>
 
-        <div style="display: flex; flex:1; min-height:0;">
+        <div class="main-content">
+            <!-- Khu vực video -->
             <div class="video-area">
                 <div class="video-grid" id="videoGrid">
                     <!-- Các video tile sẽ được thêm động bằng JavaScript -->
                 </div>
 
-                <!-- Thanh điều khiển cuộc gọi -->
+                <!-- Thanh điều khiển -->
                 <div class="controls">
                     <button class="control-btn shine-button" id="micBtn"><i class="fas fa-microphone"></i></button>
                     <button class="control-btn shine-button" id="camBtn"><i class="fas fa-video"></i></button>
@@ -624,7 +634,7 @@
                 </div>
             </div>
 
-            <!-- Panel chat bên phải -->
+            <!-- Chat panel -->
             <div class="chat-panel">
                 <div class="chat-header">
                     <i class="fas fa-comment-dots pulse-glow"></i>
@@ -640,7 +650,7 @@
             </div>
         </div>
 
-        <!-- Nút đăng xuất Google (ẩn trong phòng) -->
+        <!-- Nút đăng xuất Google -->
         <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Đăng xuất Google</button>
     </div>
 
@@ -653,8 +663,8 @@
         let peer = null;                       // Đối tượng PeerJS
         let localStream = null;                 // Luồng video/audio local
         let currentRoomId = null;               // Mã phòng hiện tại
-        let peers = {};                         // Các kết nối đến peer khác (key: peerId, value: object {connection, stream, call})
-        let peerMediaElements = {};              // Lưu các video element theo peerId
+        let peers = {};                         // Các kết nối đến peer khác (key: peerId, value: { call, connection, stream })
+        let peerMediaElements = {};              // Lưu video element theo peerId
 
         // --- Google Sign-In ---
         window.onload = function () {
@@ -692,10 +702,9 @@
 
         // --- Quản lý phòng ---
         document.getElementById('createRoomBtn').addEventListener('click', () => {
-            // Tạo mã phòng ngẫu nhiên
             const roomId = generateRoomId();
             document.getElementById('roomIdInput').value = roomId;
-            joinRoom(roomId, true); // true = người tạo
+            joinRoom(roomId, true);
         });
 
         document.getElementById('joinRoomBtn').addEventListener('click', () => {
@@ -708,7 +717,7 @@
         });
 
         function generateRoomId() {
-            return 'room-' + Math.random().toString(36).substring(2, 8) + '-' + Math.random().toString(36).substring(2, 5);
+            return 'room-' + Math.random().toString(36).substring(2, 8);
         }
 
         async function joinRoom(roomId, isCreator) {
@@ -717,61 +726,328 @@
             document.getElementById('mainApp').style.display = 'flex';
             document.getElementById('roomIdSpan').textContent = roomId;
 
-            // Khởi tạo PeerJS
-            peer = new Peer(); // Tạo ID ngẫu nhiên, server mặc định peerjs.com
-
-            peer.on('open', async (id) => {
-                console.log('PeerJS ID của tôi:', id);
+            try {
                 // Lấy local stream
-                try {
-                    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    addLocalVideo(localStream, userProfile.name);
-                } catch (err) {
-                    console.error('Không thể lấy camera/mic:', err);
-                    alert('Không thể truy cập camera/microphone. Vui lòng kiểm tra quyền.');
-                    return;
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                
+                // Khởi tạo PeerJS
+                if (isCreator) {
+                    // Người tạo dùng roomId làm peerId
+                    peer = new Peer(roomId);
+                } else {
+                    // Người tham gia tạo ID ngẫu nhiên
+                    peer = new Peer();
                 }
 
-                // Nếu là người tạo, chỉ cần chờ người khác gọi đến
-                if (isCreator) {
-                    // Lắng nghe cuộc gọi đến
-                    peer.on('call', (call) => {
-                        call.answer(localStream); // Trả lời với local stream
-                        handleIncomingCall(call);
-                    });
+                peer.on('open', (id) => {
+                    console.log('PeerJS ID của tôi:', id);
+                    
+                    // Hiển thị video local
+                    addLocalVideo(localStream, userProfile.name);
 
-                    // Lắng nghe kết nối dữ liệu (chat)
-                    peer.on('connection', (conn) => {
-                        handleDataConnection(conn);
-                    });
-                } else {
-                    // Người tham gia: chủ động gọi đến người tạo phòng (phòng được đặt tên là roomId, nhưng thực tế người tạo có peer ID riêng)
-                    // Ở đây ta giả định người tạo phòng đã đăng ký với một ID cố định = roomId? Không, mỗi peer có ID ngẫu nhiên. Cần cơ chế discovery.
-                    // Cách đơn giản: dùng roomId làm ID của peer đầu tiên. Nhưng không an toàn (xung đột). Ta sẽ cho phép người tạo set peer ID = roomId.
-                    // Tuy nhiên PeerJS cho phép tạo với ID cụ thể: new Peer(roomId). Ta sẽ làm lại.
-                    // Vì code đã gọi new Peer() không tham số, ta sẽ sửa: nếu là người tạo, tạo với ID = roomId; nếu là người tham gia, tạo ID ngẫu nhiên và gọi đến roomId.
-                    // Nhưng lúc này peer đã được tạo. Ta phải khởi tạo lại. Cách tốt: tạo peer dựa trên vai trò trước khi mở.
-                    // Ta sẽ điều chỉnh: trong joinRoom, nếu isCreator thì tạo peer với ID = roomId, else tạo ID ngẫu nhiên.
-                    // Nhưng peer.on('open') đã chạy, ta cần viết lại logic. Thôi, ta refactor:
+                    // Nếu là người tạo, lắng nghe cuộc gọi đến
+                    if (isCreator) {
+                        peer.on('call', (call) => {
+                            call.answer(localStream);
+                            handleIncomingCall(call);
+                        });
+
+                        peer.on('connection', (conn) => {
+                            handleDataConnection(conn);
+                        });
+                    } else {
+                        // Người tham gia: gọi đến người tạo (roomId)
+                        setTimeout(() => {
+                            const call = peer.call(roomId, localStream);
+                            handleOutgoingCall(call, roomId);
+
+                            // Tạo kết nối dữ liệu để chat
+                            const conn = peer.connect(roomId);
+                            handleDataConnection(conn, true);
+                        }, 1000);
+                    }
+                });
+
+                peer.on('error', (err) => {
+                    console.error('PeerJS error:', err);
+                    alert('Lỗi kết nối: ' + err.type);
+                });
+
+            } catch (err) {
+                console.error('Không thể lấy camera/mic:', err);
+                alert('Không thể truy cập camera/microphone. Vui lòng kiểm tra quyền.');
+            }
+        }
+
+        // --- Xử lý cuộc gọi đến ---
+        function handleIncomingCall(call) {
+            const peerId = call.peer;
+            call.on('stream', (remoteStream) => {
+                addRemoteVideo(remoteStream, peerId, `Người dùng ${peerId.substring(0,5)}`);
+            });
+            call.on('close', () => {
+                removeRemoteVideo(peerId);
+            });
+            peers[peerId] = { call, stream: null }; // stream sẽ được gán sau
+        }
+
+        // --- Xử lý cuộc gọi đi ---
+        function handleOutgoingCall(call, peerId) {
+            call.on('stream', (remoteStream) => {
+                addRemoteVideo(remoteStream, peerId, `Người dùng ${peerId.substring(0,5)}`);
+            });
+            call.on('close', () => {
+                removeRemoteVideo(peerId);
+            });
+            peers[peerId] = { call, stream: null };
+        }
+
+        // --- Xử lý kết nối dữ liệu (chat) ---
+        function handleDataConnection(conn, isOutgoing = false) {
+            conn.on('open', () => {
+                console.log('Data connection opened với', conn.peer);
+                peers[conn.peer] = peers[conn.peer] || {};
+                peers[conn.peer].connection = conn;
+            });
+
+            conn.on('data', (data) => {
+                // Nhận tin nhắn
+                if (data.type === 'chat') {
+                    addChatMessage(data.message, data.senderName || 'Khác');
                 }
             });
 
-            // Thực tế, cần cấu trúc lại. Dưới đây là code mới sau khi refactor (sẽ thay thế phần trên)
-            // Nhưng vì đã dài, tôi sẽ viết tiếp với giả định người tạo tạo peer với ID = roomId.
+            if (isOutgoing) {
+                // Gửi thông tin người dùng
+                conn.send({
+                    type: 'userInfo',
+                    name: userProfile.name
+                });
+            }
         }
 
-        // === Do code đã dài, tôi sẽ cung cấp phần còn lại trong phần mô tả (vì giới hạn độ dài) ===
-        // Để tiết kiệm, tôi sẽ tóm tắt các bước cần thêm:
+        // --- Thêm video local ---
+        function addLocalVideo(stream, name) {
+            const videoGrid = document.getElementById('videoGrid');
+            const tileId = 'local';
+            
+            // Xóa tile cũ nếu có
+            if (document.getElementById(`tile-${tileId}`)) {
+                document.getElementById(`tile-${tileId}`).remove();
+            }
 
-        // 1. Tạo peer với ID phù hợp (nếu tạo phòng: dùng roomId làm peerId; nếu tham gia: tạo ngẫu nhiên).
-        // 2. Khi có peer, lắng nghe cuộc gọi đến và kết nối dữ liệu.
-        // 3. Khi tham gia, gọi đến peerId của người tạo (roomId).
-        // 4. Khi nhận cuộc gọi, hiển thị video từ xa.
-        // 5. Duy trì danh sách peer để gửi tin nhắn chat qua data connection.
-        // 6. Xử lý rời phòng: đóng tất cả kết nối, dừng local stream, quay lại màn hình tạo phòng.
+            const tile = document.createElement('div');
+            tile.id = `tile-${tileId}`;
+            tile.className = 'video-tile glow-border';
+            
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.autoplay = true;
+            video.muted = true;
+            video.playsInline = true;
+            
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'participant-name';
+            nameDiv.innerHTML = `${name} <i class="fas fa-circle" style="color: #4caf50; font-size: 10px; margin-left: 6px;"></i>`;
+            
+            tile.appendChild(video);
+            tile.appendChild(nameDiv);
+            videoGrid.appendChild(tile);
+        }
 
-        // Do không gian có hạn, tôi sẽ dừng tại đây. Bạn có thể tham khảo tài liệu PeerJS để hoàn thiện.
-        // Tôi có thể cung cấp một phiên bản đầy đủ hơn nếu bạn yêu cầu.
+        // --- Thêm video remote ---
+        function addRemoteVideo(stream, peerId, name) {
+            const videoGrid = document.getElementById('videoGrid');
+            
+            // Xóa tile cũ nếu đã tồn tại
+            if (document.getElementById(`tile-${peerId}`)) {
+                document.getElementById(`tile-${peerId}`).remove();
+            }
+
+            const tile = document.createElement('div');
+            tile.id = `tile-${peerId}`;
+            tile.className = 'video-tile glow-border';
+            
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.autoplay = true;
+            video.playsInline = true;
+            
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'participant-name';
+            nameDiv.textContent = name;
+            
+            tile.appendChild(video);
+            tile.appendChild(nameDiv);
+            videoGrid.appendChild(tile);
+            
+            // Lưu element để sau này xóa
+            peerMediaElements[peerId] = tile;
+        }
+
+        // --- Xóa video remote ---
+        function removeRemoteVideo(peerId) {
+            if (peerMediaElements[peerId]) {
+                peerMediaElements[peerId].remove();
+                delete peerMediaElements[peerId];
+            }
+        }
+
+        // --- Thêm tin nhắn vào chat ---
+        function addChatMessage(text, senderName) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = senderName.charAt(0).toUpperCase();
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.innerHTML = `<div class="name">${senderName}</div><div class="text">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(bubble);
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // --- Xử lý chat UI ---
+        document.getElementById('sendChatBtn').addEventListener('click', () => {
+            const input = document.getElementById('chatInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            // Hiển thị tin nhắn của mình
+            addChatMessage(msg, userProfile.name);
+
+            // Gửi cho tất cả các peer qua data connection
+            for (let peerId in peers) {
+                if (peers[peerId].connection) {
+                    peers[peerId].connection.send({
+                        type: 'chat',
+                        message: msg,
+                        senderName: userProfile.name
+                    });
+                }
+            }
+
+            input.value = '';
+        });
+
+        document.getElementById('chatInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('sendChatBtn').click();
+            }
+        });
+
+        // --- Điều khiển mic/camera ---
+        let micEnabled = true;
+        let camEnabled = true;
+
+        document.getElementById('micBtn').addEventListener('click', () => {
+            if (localStream) {
+                localStream.getAudioTracks().forEach(track => {
+                    track.enabled = !track.enabled;
+                });
+                micEnabled = !micEnabled;
+                document.getElementById('micBtn').innerHTML = micEnabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+            }
+        });
+
+        document.getElementById('camBtn').addEventListener('click', () => {
+            if (localStream) {
+                localStream.getVideoTracks().forEach(track => {
+                    track.enabled = !track.enabled;
+                });
+                camEnabled = !camEnabled;
+                document.getElementById('camBtn').innerHTML = camEnabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+            }
+        });
+
+        // --- Rời phòng ---
+        document.getElementById('leaveRoomBtn').addEventListener('click', leaveRoom);
+        document.getElementById('endCallBtn').addEventListener('click', leaveRoom);
+
+        function leaveRoom() {
+            // Đóng tất cả kết nối
+            for (let peerId in peers) {
+                if (peers[peerId].call) peers[peerId].call.close();
+                if (peers[peerId].connection) peers[peerId].connection.close();
+            }
+            peers = {};
+            
+            // Xóa tất cả video tile (trừ local)
+            for (let id in peerMediaElements) {
+                peerMediaElements[id].remove();
+            }
+            peerMediaElements = {};
+
+            // Dừng local stream
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+
+            // Đóng peer
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+
+            // Xóa video local khỏi grid
+            const localTile = document.getElementById('tile-local');
+            if (localTile) localTile.remove();
+
+            // Quay lại màn hình tạo phòng
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('roomOverlay').style.display = 'flex';
+            document.getElementById('roomIdInput').value = '';
+        }
+
+        // --- Đăng xuất Google ---
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            google.accounts.id.disableAutoSelect();
+            
+            // Rời phòng nếu đang ở trong phòng
+            if (document.getElementById('mainApp').style.display === 'flex') {
+                leaveRoom();
+            }
+
+            // Ẩn room overlay và hiện login
+            document.getElementById('roomOverlay').style.display = 'none';
+            document.getElementById('loginOverlay').style.display = 'flex';
+        });
+
+        // --- Screen share (cơ bản) ---
+        document.getElementById('screenShareBtn').addEventListener('click', async () => {
+            try {
+                const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                // Thay thế video track local bằng screen track
+                const videoTrack = screenStream.getVideoTracks()[0];
+                const sender = peer?.connections; // Cần lấy sender từ peer connections
+                // Đơn giản: thay track trong localStream và gửi lại
+                if (localStream) {
+                    const oldTrack = localStream.getVideoTracks()[0];
+                    localStream.removeTrack(oldTrack);
+                    localStream.addTrack(videoTrack);
+                    
+                    // Thông báo cho các peer thay đổi track (PeerJS tự động xử lý?)
+                    // Thực tế PeerJS không tự động, cần gọi replaceTrack trên các call
+                    for (let peerId in peers) {
+                        if (peers[peerId].call) {
+                            const sender = peers[peerId].call.peerConnection.getSenders().find(s => s.track.kind === 'video');
+                            if (sender) {
+                                sender.replaceTrack(videoTrack);
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Không thể chia sẻ màn hình:', err);
+            }
+        });
     </script>
 </body>
 </html>
